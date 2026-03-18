@@ -12,7 +12,10 @@
       "Bash(cd E:/Sistemas/reto-tecnico/backend && npm install pg && npm uninstall better-sqlite3)",
       "Bash(cd E:/Sistemas/reto-tecnico/backend && npm install dotenv)",
       "Bash(\"C:/Program Files/PostgreSQL/18/bin/psql.exe\" -U postgres -c \"SELECT 1\" 2>&1)",
-      "Bash(PGPASSWORD=123 \"C:/Program Files/PostgreSQL/18/bin/psql.exe\" -U postgres -h localhost -c \"SELECT 1\" 2>&1)"
+      "Bash(PGPASSWORD=123 \"C:/Program Files/PostgreSQL/18/bin/psql.exe\" -U postgres -h localhost -c \"SELECT 1\" 2>&1)",
+      "Bash(tree:*)",
+      "Bash(dir:*)",
+      "Bash(npm install:*)"
     ]
   }
 }

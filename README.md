@@ -37,40 +37,47 @@ Que hace cada una:
 
 ## 1.2 Estructura de carpetas
 
-Organizamos el codigo siguiendo una **arquitectura por capas** (Routes - Controllers - Models):
+Organizamos el codigo siguiendo una **arquitectura por capas** (Routes - Controllers - Services - Models):
 
 ```
 backend/
 ├── src/
 │   ├── index.js               # Punto de entrada: levanta el servidor
 │   ├── db/
-│   │   └── database.js        # Conexion a PostgreSQL y creacion de tablas
-│   ├── models/                # Capa de DATOS: queries SQL puras
-│   │   ├── userModel.js       # Buscar y crear usuarios
-│   │   ├── orderModel.js      # Buscar y crear carritos, actualizar total
-│   │   └── orderItemModel.js  # Buscar, crear y eliminar items del carrito
-│   ├── controllers/           # Capa de LOGICA: recibe request, responde JSON
-│   │   ├── authController.js  # Registro e inicio de sesion
-│   │   ├── cartController.js  # Agregar, obtener, eliminar productos del carrito
-│   │   └── productController.js # Consume la API externa de productos
+│   │   └── sequelize.js       # Conexion Sequelize a PostgreSQL
+│   ├── models/                # Capa de DATOS: Modelos Sequelize
+│   │   ├── User.js            # Modelo de usuario
+│   │   ├── Order.js           # Modelo de orden (carrito)
+│   │   ├── OrderItem.js       # Modelo de items del carrito
+│   │   └── index.js           # Relaciones y exports
+│   ├── services/              # Capa de LOGICA DE NEGOCIO
+│   │   ├── authService.js     # Registro, login, generacion JWT
+│   │   ├── cartService.js     # Operaciones del carrito
+│   │   └── productService.js  # Consumo de API externa
+│   ├── controllers/           # Capa HTTP: request/response
+│   │   ├── authController.js  # Maneja peticiones de auth
+│   │   ├── cartController.js  # Maneja peticiones del carrito
+│   │   └── productController.js # Maneja peticiones de productos
 │   ├── routes/                # Capa de RUTAS: define los endpoints
 │   │   ├── authRoutes.js      # POST /register, POST /login
 │   │   ├── cartRoutes.js      # POST, GET, DELETE del carrito
 │   │   └── productRoutes.js   # GET /products
 │   └── middleware/            # Funciones intermedias
-│       └── auth.js            # Verifica el token JWT en cada peticion protegida
+│       └── auth.js            # Verifica el token JWT
 ├── .env                       # Variables de entorno (NO se sube a git)
+├── postman_collection.json    # Coleccion de pruebas Postman
 └── package.json
 ```
 
-**Por que esta separacion y no MVC?**
+**Por que esta separacion por capas?**
 
-MVC (Modelo-Vista-Controlador) incluye una capa de "Vista" para renderizar HTML o templates. Nuestro backend es una **API REST** que solo devuelve JSON, no tiene vistas. Por eso usamos una arquitectura por capas:
+Usamos una arquitectura de **4 capas** con separacion de responsabilidades:
 
-- **models/**: Solo contienen queries SQL. Si mañana cambias de PostgreSQL a MySQL, solo tocas esta capa.
-- **controllers/**: Reciben el `req` y `res` de Express, validan datos, llaman a los modelos y responden JSON al cliente. No tienen SQL.
+- **models/**: Definen la estructura de datos con Sequelize ORM. Solo atributos y relaciones, sin logica.
+- **services/**: Contienen la logica de negocio (validaciones, reglas, transformaciones). No conocen HTTP.
+- **controllers/**: Solo manejan HTTP: extraen datos del request, llaman al service, envian response. No tienen logica de negocio.
 - **routes/**: Solo definen que metodo HTTP va a que controlador. Muy limpias.
-- **middleware/**: Funciones que se ejecutan ANTES del controlador (por ejemplo, verificar que el usuario envio un token valido).
+- **middleware/**: Funciones que se ejecutan ANTES del controlador (verificar token JWT).
 
 ## 1.3 Conexion a PostgreSQL
 
@@ -189,28 +196,48 @@ initDB().then(() => {
 
 **Importante:** `dotenv.config()` va en la PRIMERA linea porque los demas archivos (`database.js`, `auth.js`) usan `process.env` y necesitan que las variables ya esten cargadas.
 
-## 1.5 Modelos - Capa de datos
+## 1.5 Modelos Sequelize - Capa de datos
 
-Los modelos encapsulan todas las queries SQL. Ejemplo de `userModel.js`:
-
-```js
-const findByEmail = async (email) => {
-  const result = await pool.query('SELECT * FROM usuario WHERE email = $1', [email]);
-  return result.rows[0] || null;
-};
-```
-
-**Por que usamos `$1` en lugar de concatenar el valor directo?**
+Los modelos definen la estructura de datos usando Sequelize ORM. Ejemplo de `User.js`:
 
 ```js
-// MAL - vulnerable a SQL Injection:
-pool.query(`SELECT * FROM usuario WHERE email = '${email}'`);
+const { DataTypes } = require('sequelize');
+const sequelize = require('../db/sequelize');
 
-// BIEN - query parametrizada, segura:
-pool.query('SELECT * FROM usuario WHERE email = $1', [email]);
+const User = sequelize.define('Usuario', {
+  id_usuario: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
+  nombre: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  email: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    unique: true
+  },
+  password: {
+    type: DataTypes.STRING,
+    allowNull: false
+  }
+}, {
+  tableName: 'usuario',
+  timestamps: false
+});
+
+module.exports = User;
 ```
 
-Con `$1`, `$2`, etc., PostgreSQL trata los valores como datos, no como codigo SQL.
+**Ventajas de usar Sequelize ORM:**
+
+- Los modelos son clases con atributos definidos (no SQL crudo)
+- Queries mas legibles: `User.findOne({ where: { email } })` en lugar de SQL
+- Relaciones declarativas: `User.hasMany(Order)`, `Order.belongsTo(User)`
+- Validaciones integradas: `allowNull`, `unique`, tipos de datos
+- Sequelize genera las queries SQL de forma segura (previene SQL Injection)
 
 ## 1.6 Autenticacion (JWT + bcrypt)
 
@@ -239,9 +266,53 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
 
 El middleware `auth.js` intercepta la peticion, verifica el token, y si es valido, agrega `req.user` con los datos del usuario (id y email). Si no es valido, responde `401 Unauthorized`.
 
-## 1.7 Controladores - Logica de negocio
+## 1.7 Services y Controllers
 
-### productController
+### Services - Logica de negocio
+
+Los services contienen toda la logica de negocio. Los controllers solo llaman a los services.
+
+Ejemplo de `authService.js`:
+```js
+const registerUser = async (nombre, email, password) => {
+  // Verificar si el email ya existe
+  const existing = await User.findOne({ where: { email } });
+  if (existing) {
+    throw { status: 409, message: 'El email ya está registrado' };
+  }
+
+  // Hashear password y crear usuario
+  const hashedPassword = await bcrypt.hash(password, 10);
+  const user = await User.create({ nombre, email, password: hashedPassword });
+
+  // Generar token JWT
+  const token = jwt.sign({ id: user.id_usuario, email }, JWT_SECRET, { expiresIn: '24h' });
+
+  return { user, token };
+};
+```
+
+### Controllers - Capa HTTP
+
+Los controllers solo manejan request/response:
+```js
+const register = async (req, res) => {
+  const { nombre, email, password } = req.body;
+
+  if (!nombre || !email || !password) {
+    return res.status(400).json({ error: 'Datos requeridos' });
+  }
+
+  try {
+    const result = await authService.registerUser(nombre, email, password);
+    res.status(201).json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message });
+  }
+};
+```
+
+### productService
 
 Consume la API externa `https://dummyjson.com/products` y transforma los datos:
 

@@ -1,7 +1,4 @@
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const userModel = require('../models/userModel');
-const { JWT_SECRET } = require('../middleware/auth');
+const authService = require('../services/authService');
 
 const register = async (req, res) => {
   const { nombre, email, password } = req.body;
@@ -11,19 +8,12 @@ const register = async (req, res) => {
   }
 
   try {
-    const existing = await userModel.findByEmail(email);
-    if (existing) {
-      return res.status(409).json({ error: 'El email ya está registrado' });
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await userModel.create(nombre, email, hashedPassword);
-
-    const token = jwt.sign({ id: user.id_usuario, email: user.email }, JWT_SECRET, { expiresIn: '24h' });
-
-    res.status(201).json({ user: { id: user.id_usuario, nombre: user.nombre, email: user.email }, token });
+    const result = await authService.registerUser(nombre, email, password);
+    res.status(201).json(result);
   } catch (err) {
-    res.status(500).json({ error: 'Error al registrar usuario' });
+    const status = err.status || 500;
+    const message = err.message || 'Error al registrar usuario';
+    res.status(status).json({ error: message });
   }
 };
 
@@ -35,21 +25,12 @@ const login = async (req, res) => {
   }
 
   try {
-    const user = await userModel.findByEmail(email);
-    if (!user) {
-      return res.status(401).json({ error: 'Credenciales inválidas' });
-    }
-
-    const valid = await bcrypt.compare(password, user.password);
-    if (!valid) {
-      return res.status(401).json({ error: 'Credenciales inválidas' });
-    }
-
-    const token = jwt.sign({ id: user.id_usuario, email: user.email }, JWT_SECRET, { expiresIn: '24h' });
-
-    res.json({ user: { id: user.id_usuario, nombre: user.nombre, email: user.email }, token });
+    const result = await authService.loginUser(email, password);
+    res.json(result);
   } catch (err) {
-    res.status(500).json({ error: 'Error al iniciar sesión' });
+    const status = err.status || 500;
+    const message = err.message || 'Error al iniciar sesión';
+    res.status(status).json({ error: message });
   }
 };
 

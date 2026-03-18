@@ -1,6 +1,6 @@
 # Reto Tecnico - Backend
 
-API REST para tienda de productos con carrito de compras. Construida con Node.js, Express y PostgreSQL.
+API REST para tienda de productos con carrito de compras. Construida con Node.js, Express, Sequelize y PostgreSQL.
 
 ## Requisitos previos
 
@@ -54,37 +54,96 @@ npm run dev
 npm start
 ```
 
-Las tablas se crean automaticamente al iniciar el servidor. Tambien se crea un usuario por defecto:
+Las tablas se crean automaticamente al iniciar el servidor (Sequelize sync). Tambien se crea un usuario por defecto:
 
 - **Email:** demo@demo.com
 - **Password:** 123456
 
-## Estructura del proyecto
+## Arquitectura del proyecto
+
+El proyecto sigue una **arquitectura por capas** con separacion de responsabilidades:
 
 ```
 src/
-├── controllers/       # Logica HTTP y respuestas
+├── controllers/       # Capa HTTP: request/response
 │   ├── authController.js
 │   ├── cartController.js
 │   └── productController.js
-├── models/            # Acceso a datos (queries SQL)
-│   ├── userModel.js
-│   ├── orderModel.js
-│   └── orderItemModel.js
-├── middleware/         # Middlewares (autenticacion JWT)
-│   └── auth.js
+├── services/          # Capa de LOGICA DE NEGOCIO
+│   ├── authService.js      # Registro, login, JWT
+│   ├── cartService.js      # Operaciones del carrito
+│   └── productService.js   # Consumo API externa
+├── models/            # Capa de DATOS: Modelos Sequelize
+│   ├── User.js             # Modelo Usuario
+│   ├── Order.js            # Modelo Orden (carrito)
+│   ├── OrderItem.js        # Modelo Items del carrito
+│   └── index.js            # Relaciones y exports
 ├── routes/            # Definicion de endpoints
 │   ├── authRoutes.js
 │   ├── cartRoutes.js
 │   └── productRoutes.js
+├── middleware/        # Middlewares
+│   └── auth.js             # Verificacion JWT
 ├── db/
-│   └── database.js    # Conexion PostgreSQL e inicializacion
+│   └── sequelize.js        # Conexion Sequelize a PostgreSQL
 └── index.js           # Entry point
 ```
 
+### Flujo de datos
+
+```
+Request → Routes → Controllers → Services → Models → Database
+                        ↓
+                   Response
+```
+
+- **Controllers**: Solo manejan HTTP (extraer datos del request, llamar al service, enviar response)
+- **Services**: Contienen la logica de negocio (validaciones, reglas, transformaciones)
+- **Models**: Definen la estructura de datos con Sequelize (atributos, relaciones)
+
+## Modelos Sequelize
+
+### User
+```javascript
+{
+  id_usuario: INTEGER (PK, autoIncrement),
+  nombre: STRING,
+  email: STRING (unique),
+  password: STRING
+}
+```
+
+### Order (Carrito)
+```javascript
+{
+  id_carrito: INTEGER (PK, autoIncrement),
+  id_usuario: INTEGER (FK -> User),
+  fecha_creacion: DATE,
+  fecha_actualizacion: DATE,
+  total_compra: DECIMAL(10,2)
+}
+```
+
+### OrderItem
+```javascript
+{
+  id_detalle: INTEGER (PK, autoIncrement),
+  id_carrito: INTEGER (FK -> Order),
+  id_producto: INTEGER,
+  sku: STRING,
+  precio: DECIMAL(10,2)
+}
+```
+
+### Relaciones
+- User hasMany Order
+- Order belongsTo User
+- Order hasMany OrderItem
+- OrderItem belongsTo Order
+
 ## Endpoints
 
-### Autenticacion
+### Autenticacion (publicas)
 
 | Metodo | Ruta              | Descripcion         |
 |--------|-------------------|----------------------|
@@ -112,7 +171,7 @@ POST /api/auth/login
 
 Ambos retornan un `token` JWT que se debe enviar en las rutas protegidas.
 
-### Productos
+### Productos (publica)
 
 | Metodo | Ruta           | Descripcion                  |
 |--------|----------------|------------------------------|
@@ -138,16 +197,10 @@ POST /api/cart
 }
 ```
 
-## Modelo de datos
-
-- **usuario** - id_usuario, nombre, email, password
-- **orden** (carrito) - id_carrito, id_usuario, fecha_creacion, fecha_actualizacion, total_compra
-- **orden_items** - id_detalle, id_carrito, id_producto, sku, precio
-
 ## Tecnologias
 
-- Node.js + Express
-- PostgreSQL (pg)
+- Node.js + Express 5
+- PostgreSQL + Sequelize ORM
 - JWT (jsonwebtoken)
 - bcryptjs
 - dotenv
