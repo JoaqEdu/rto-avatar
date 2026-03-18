@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd \"E:/Sistemas/reto-tecnico/backend\" && npm install express cors better-sqlite3)",
+      "Bash(cd \"E:/Sistemas/reto-tecnico\" && npm create vite@latest frontend -- --template react 2>&1)",
+      "Bash(cd \"E:/Sistemas/reto-tecnico/frontend\" && npm install)",
+      "Bash(cd \"E:/Sistemas/reto-tecnico/backend\" && node -e \"require\\('./src/db/database'\\); console.log\\('DB OK'\\)\", aun no colocas el nombre de la nase cierto?)",
+      "Bash(cd \"E:/Sistemas/reto-tecnico/backend\" && timeout 5 node src/index.js 2>&1 || true)",
+      "Bash(cd \"E:/Sistemas/reto-tecnico/backend\" && node -e \"\nconst app = require\\('express'\\)\\(\\);\nconst cors = require\\('cors'\\);\napp.use\\(cors\\(\\)\\);\napp.use\\(require\\('express'\\).json\\(\\)\\);\n\nrequire\\('./src/db/database'\\);\napp.use\\('/api/products', require\\('./src/routes/productRoutes'\\)\\);\napp.use\\('/api/cart', require\\('./src/routes/cartRoutes'\\)\\);\n\nconst server = app.listen\\(3099, async \\(\\) => {\n  try {\n    // Test products endpoint\n    const r1 = await fetch\\('http://localhost:3099/api/products'\\);\n    const products = await r1.json\\(\\);\n    console.log\\('Products count:', products.length\\);\n    console.log\\('Sample:', JSON.stringify\\(products[0], null, 2\\)\\);\n\n    // Test cart GET\n    const r2 = await fetch\\('http://localhost:3099/api/cart/1'\\);\n    const cart = await r2.json\\(\\);\n    console.log\\('Cart:', JSON.stringify\\(cart\\)\\);\n\n    // Test add to cart\n    const r3 = await fetch\\('http://localhost:3099/api/cart', {\n      method: 'POST',\n      headers: {'Content-Type':'application/json'},\n      body: JSON.stringify\\({idUsuario:1, idProducto:1, sku:'SKU-1', precio:9.99}\\)\n    }\\);\n    const added = await r3.json\\(\\);\n    console.log\\('Added:', JSON.stringify\\(added\\)\\);\n\n    // Test remove\n    const r4 = await fetch\\('http://localhost:3099/api/cart/1/product/1', {method:'DELETE'}\\);\n    const removed = await r4.json\\(\\);\n    console.log\\('Removed:', JSON.stringify\\(removed\\)\\);\n\n    console.log\\('ALL TESTS PASSED'\\);\n  } catch\\(e\\) {\n    console.error\\('ERROR:', e.message\\);\n  }\n  server.close\\(\\);\n}\\);\n\" 2>&1)",
+      "Bash(cd \"E:/Sistemas/reto-tecnico/backend\" && npm install jsonwebtoken bcryptjs)",
+      "Bash(taskkill //F //IM node.exe 2>/dev/null; rm -f \"E:/Sistemas/reto-tecnico/backend/src/db/store.db\" \"E:/Sistemas/reto-tecnico/backend/src/db/store.db-wal\" \"E:/Sistemas/reto-tecnico/backend/src/db/store.db-shm\", crea una conexion de base de datos en postgresql, y con nombre reto-base)",
+      "Bash(cd E:/Sistemas/reto-tecnico/backend && npm install pg && npm uninstall better-sqlite3)",
+      "Bash(cd E:/Sistemas/reto-tecnico/backend && npm install dotenv)",
+      "Bash(\"C:/Program Files/PostgreSQL/18/bin/psql.exe\" -U postgres -c \"SELECT 1\" 2>&1)",
+      "Bash(PGPASSWORD=123 \"C:/Program Files/PostgreSQL/18/bin/psql.exe\" -U postgres -h localhost -c \"SELECT 1\" 2>&1)"
+    ]
+  }
+}
