@@ -21,7 +21,7 @@ npm init -y
 Esto genera el `package.json` base. Luego instalamos las dependencias necesarias:
 
 ```bash
-npm install express cors pg dotenv bcryptjs jsonwebtoken
+npm install express cors pg sequelize dotenv bcryptjs jsonwebtoken
 ```
 
 Que hace cada una:
@@ -31,6 +31,7 @@ Que hace cada una:
 | `express`      | Framework web para crear el servidor y las rutas de la API         |
 | `cors`         | Permite que el frontend (otro puerto) se comunique con el backend  |
 | `pg`           | Driver para conectarnos a PostgreSQL desde Node.js                 |
+| `sequelize`    | ORM para definir modelos y manejar la base de datos                |
 | `dotenv`       | Carga variables de entorno desde un archivo `.env`                 |
 | `bcryptjs`     | Hashea las contraseñas antes de guardarlas en la base de datos     |
 | `jsonwebtoken` | Genera y verifica tokens JWT para la autenticacion                 |

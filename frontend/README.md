@@ -78,5 +78,5 @@ El backend crea un usuario de prueba al iniciar:
 ## Tecnologias
 
 - React 19
-- Vite 8
+- Vite 5
 - JavaScript (ES Modules)
